@@ -1,4 +1,4 @@
-const { CSS_MODULE_LOCAL_IDENT_NAME } = require('../constants')
+const { CSS_MODULE_LOCAL_IDENT_NAME } = require('../index')
 
 module.exports = {
   plugins: [

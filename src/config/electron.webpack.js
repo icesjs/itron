@@ -3,7 +3,7 @@ const NodeAddonsPlugin = require('../lib/plugins/NodeAddonsPlugin')
 const BundleAnalyzerPlugin = require('../lib/plugins/BundleAnalyzerPlugin')
 const CheckGlobalPathsPlugin = require('../lib/plugins/CheckGlobalPathsPlugin')
 const { resolveModule: resolve } = require('../lib/resolve')
-const { updateJsonFile } = require('../lib/utils')
+const { updateJsonFile, isTypeScriptProject, getSelfContext } = require('../lib/utils')
 
 //
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
@@ -16,8 +16,9 @@ const {
   MAIN_BUILD_PATH,
   MAIN_BUILD_FILE_NAME,
   MAIN_CONTEXT,
-  MAIN_CONTEXT_ALIAS
-} = require('./constants')
+  MAIN_CONTEXT_ALIAS,
+  MAIN_PRELOAD
+} = require('./index')
 const context = process.cwd()
 
 const {
@@ -36,20 +37,21 @@ const {
 
 const isEnvDevelopment = NODE_ENV === 'development'
 const isEnvProduction = NODE_ENV === 'production'
+const useTypeScript = isTypeScriptProject()
 const mode = isEnvDevelopment ? 'development' : 'production'
 const enableAddons = ENABLE_NODE_ADDONS !== 'false'
 const shouldUseSourceMap = GENERATE_SOURCEMAP !== 'false'
 
-const MAIN_PRELOAD = path.join(__dirname, 'preload/main.js')
-
-// 同步更新sourceMap开关
-updateJsonFile(
-  'tsconfig.json',
-  {
-    compilerOptions: { sourceMap: isEnvDevelopment || shouldUseSourceMap }
-  },
-  false
-)
+if (useTypeScript) {
+  // 同步更新sourceMap开关
+  updateJsonFile(
+    'tsconfig.json',
+    {
+      compilerOptions: { sourceMap: isEnvDevelopment || shouldUseSourceMap }
+    },
+    false
+  )
+}
 
 //
 module.exports = {
@@ -63,9 +65,11 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.mjs', '.js', '.json'],
-    alias: {
-      [MAIN_CONTEXT_ALIAS]: MAIN_CONTEXT
-    }
+    alias: MAIN_CONTEXT_ALIAS
+      ? {
+          [MAIN_CONTEXT_ALIAS]: MAIN_CONTEXT
+        }
+      : {}
   },
   devtool: isEnvDevelopment
     ? GENERATE_FULL_SOURCEMAP !== 'false'
@@ -79,14 +83,23 @@ module.exports = {
       { parser: { requireEnsure: false } },
       {
         oneOf: [
-          {
-            test: /\.(?:ts|mjs|js)$/,
-            loader: 'ts-loader',
-            include: path.resolve(context, 'src'),
-            options: {
-              transpileOnly: true
-            }
-          },
+          useTypeScript
+            ? {
+                test: /\.(?:ts|mjs|js)$/,
+                loader: 'ts-loader',
+                include: path.resolve(context, 'src'),
+                options: {
+                  transpileOnly: true
+                }
+              }
+            : {
+                test: /\.m?js$/,
+                exclude: /node_modules/,
+                use: {
+                  loader: 'babel-loader',
+                  options: path.join(getSelfContext(), 'babel.config.js')
+                }
+              },
           {
             loader: 'file-loader',
             exclude: /\.(?:json|m?js|ts|node)$/,

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // setup需要最先执行
 require('../lib/setup')('production')
 //
@@ -17,8 +15,9 @@ const {
   printErrorAndExit
 } = require('../lib/utils')
 const { runScript, runWebpack } = require('../lib/runner')
+const builder = require('../builder')
 
-const { RENDERER_BUILD_PATH, MAIN_BUILD_PATH, APP_BUILD_PATH } = require('../config/constants')
+const { RENDERER_BUILD_PATH, MAIN_BUILD_PATH, APP_BUILD_PATH } = require('../config')
 
 // 运行构建
 run().catch(printErrorAndExit)
@@ -37,13 +36,15 @@ async function run() {
   const ANALYZER_SERVER_PORT = hasAnalyzerServer
     ? await Promise.all([getAvailablePort(5010), getAvailablePort(5000)])
     : []
+  const { env, script, args } = builder('build', { ANALYZER_SERVER_PORT: ANALYZER_SERVER_PORT[0] })
 
   // Renderer
   const renderer = runScript({
     logger: createPrefixedLogger('renderer', LOG_PREFIX_COLOR_RENDERER),
-    script: require.resolve('@craco/craco/scripts/build', { paths: [process.cwd()] }),
     exitHandle: (code) => code !== 0 && process.exit(code),
-    env: { ANALYZER_SERVER_PORT: ANALYZER_SERVER_PORT[0] }
+    script,
+    env,
+    args
   }).start()
 
   // Main

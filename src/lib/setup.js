@@ -22,7 +22,7 @@ function getReady() {
     MAIN_BUILD_PATH,
     MAIN_BUILD_FILE_NAME,
     ADDONS_BUILD_PATH
-  } = require('../config/constants')
+  } = require('../config')
   const declaredMain = getPackageJson().main
   const main = path.resolve(MAIN_BUILD_PATH, MAIN_BUILD_FILE_NAME)
   const entry = relativePath(process.cwd(), main)

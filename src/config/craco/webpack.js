@@ -1,6 +1,4 @@
 //
-const path = require('path')
-const StyleLintPlugin = require('stylelint-webpack-plugin')
 const LocaleWebpackPlugin = require('@ices/locale-webpack-plugin')
 const ThemeWebpackPlugin = require('@ices/theme-webpack-plugin')
 const NodeAddonsPlugin = require('../../lib/plugins/NodeAddonsPlugin')
@@ -14,9 +12,12 @@ const {
   RENDERER_CONTEXT,
   RENDERER_CONTEXT_ALIAS,
   RENDERER_ENTRY,
-  RENDERER_BUILD_PATH
-} = require('../constants')
-const cwd = process.cwd()
+  RENDERER_BUILD_PATH,
+  THEME_PLUGIN_OPTIONS,
+  LOCALE_PLUGIN_OPTIONS,
+  RENDERER_PRELOAD,
+  RENDERER_PUBLIC_ASSETS
+} = require('../index')
 
 const {
   RENDERER_BUILD_TARGET,
@@ -29,24 +30,25 @@ if (!/^(web|electron-renderer)$/.test(RENDERER_BUILD_TARGET)) {
 }
 
 const isEnvProduction = process.env.NODE_ENV === 'production'
-const RENDERER_PRELOAD = path.join(__dirname, '../preload/renderer.js')
 const target = RENDERER_BUILD_TARGET
 
 //
 const customizeWebpackConfig = {
   target,
   entry: {
-    index: [RENDERER_PRELOAD, RENDERER_ENTRY]
+    index: [RENDERER_PRELOAD, RENDERER_ENTRY].filter(Boolean)
   },
   output: { path: RENDERER_BUILD_PATH },
   resolve: {
-    alias: {
-      [RENDERER_CONTEXT_ALIAS]: RENDERER_CONTEXT
-    }
+    alias: RENDERER_CONTEXT_ALIAS
+      ? {
+          [RENDERER_CONTEXT_ALIAS]: RENDERER_CONTEXT
+        }
+      : {}
   },
   // 这是个publicAssets是自定义的属性，并不属于webpack配置项
   // 用于修改public静态资源目录，craco.plugin.js插件会处理这个属性
-  publicAssets: path.resolve('public/web/'),
+  publicAssets: RENDERER_PUBLIC_ASSETS,
   plugins: [
     // 支持node addon的构建与打包
     // 注意，node addon仅在渲染模块以electron-renderer模式打包时可用
@@ -55,19 +57,10 @@ const customizeWebpackConfig = {
     // 检查__dirname和__filename变量的使用，并抛出编译错误
     new CheckGlobalPathsPlugin(),
     // 本地化模块插件
-    new LocaleWebpackPlugin({
-      extract: target === 'web'
-    }),
+    LOCALE_PLUGIN_OPTIONS && new LocaleWebpackPlugin(LOCALE_PLUGIN_OPTIONS),
     // 主题化插件
-    new ThemeWebpackPlugin({
-      themes: 'src/renderer/themes/*.scss'
-    }),
+    THEME_PLUGIN_OPTIONS && new ThemeWebpackPlugin(THEME_PLUGIN_OPTIONS),
     //
-    new StyleLintPlugin({
-      configBasedir: cwd,
-      context: RENDERER_CONTEXT,
-      files: ['**/*.{css,scss}']
-    }),
     new webpack.EnvironmentPlugin({
       IS_ELECTRON: target !== 'web'
     })

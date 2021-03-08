@@ -9,7 +9,7 @@ module.exports = exports = {
   //
   relativePath(from, to, addDotPrefix = true) {
     let relativePath = !to ? '' : path.relative(from, to).replace(/\\/g, '/')
-    if (addDotPrefix && relativePath && !/^..?\//.test(relativePath)) {
+    if (addDotPrefix && relativePath && !/^\.\.?\//.test(relativePath)) {
       relativePath = `./${relativePath}`
     }
     return relativePath || '.'
@@ -145,5 +145,41 @@ module.exports = exports = {
         return new Proxy(value, handler)
       }
     })
+  },
+
+  // 简单判断当前的工程，是不是一个typescript工程
+  isTypeScriptProject() {
+    const cwd = process.cwd()
+    try {
+      for (const file of fs.readdirSync(cwd).reverse()) {
+        if (/tsconfig(\..+?)*\.json$/i.test(file)) {
+          const { dependencies = {}, devDependencies = {} } = require(path.join(
+            cwd,
+            'package.json'
+          ))
+          if (dependencies.typescript || devDependencies.typescript) {
+            return !!require.resolve('typescript', { paths: [cwd] })
+          }
+          break
+        }
+      }
+    } catch (e) {}
+    return false
+  },
+
+  // 获取自身模块的根路径
+  getSelfContext() {
+    const cwd = process.cwd()
+    let file = __filename
+    while (!fs.existsSync(path.join((file = path.dirname(file)), 'package.json'))) {
+      if (file === cwd || path.basename(file) === 'node_modules') {
+        file = ''
+        break
+      }
+    }
+    if (file && path.dirname(file) !== file) {
+      return file
+    }
+    return ''
   }
 }

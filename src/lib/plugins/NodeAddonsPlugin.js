@@ -1,6 +1,6 @@
 const path = require('path')
 const { addLoaderBefore } = require('@ices/use-loader')
-const { APP_BUILD_PATH, ADDONS_BUILD_PATH } = require('../../config/constants')
+const { APP_BUILD_PATH, ADDONS_BUILD_PATH } = require('../../config')
 
 /**
  * 对node addon进行webpack构建与打包支持

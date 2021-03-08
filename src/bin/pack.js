@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 //
 require('../lib/setup')('production', {
   // 这些环境变量强制被使用
@@ -25,7 +23,7 @@ const {
   MAIN_BUILD_PATH,
   RENDERER_BUILD_PATH,
   ADDONS_BUILD_PATH
-} = require('../config/constants')
+} = require('../config')
 //
 const {
   ELECTRON_MAIN_ENTRY_PATH,
@@ -35,10 +33,8 @@ const {
   CI = 'false'
 } = process.env
 
-if (require.main === module) {
-  // 从命令行进入
-  run(getCommandArgs()).catch(printErrorAndExit)
-}
+// 从命令行进入
+run(getCommandArgs()).catch(printErrorAndExit)
 
 async function run(commandArgs = {}) {
   const taskNames = ['rebuild-app-deps', 'build-production', 'pack-resources']
@@ -199,11 +195,11 @@ async function synchronizeBuilderConfig(filepath, { dir, publish }) {
 async function writeBuilderConfig(filepath, updates) {
   const configPath = path.resolve(filepath)
   const content = await promisify(fs.readFile)(configPath, 'utf8')
-  const config = yaml.safeLoad(content)
+  const config = yaml.load(content)
   const updatedConfig = merge(config, updates, {
     arrayMerge: (dest, src) => src
   })
-  const dumped = yaml.safeDump(updatedConfig)
+  const dumped = yaml.dump(updatedConfig)
   await promisify(fs.outputFile)(configPath, dumped)
   return updatedConfig
 }

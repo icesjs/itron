@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // setup需要最先执行
 require('../lib/setup')('development')
 //
@@ -10,6 +8,7 @@ const wait = require('wait-on')
 const { log, createPrefixedLogger } = require('../lib/logger')
 const { getAvailablePort, printErrorAndExit } = require('../lib/utils')
 const { runWebpack, runScript } = require('../lib/runner')
+const builder = require('../builder')
 
 // 运行构建
 run().catch(printErrorAndExit)
@@ -40,19 +39,24 @@ async function run() {
 
   //
   const beforeExit = (callback) => (main ? main.stop(callback) : callback())
+  const { env, script, args } = builder('start', {
+    PORT: `${port}`,
+    ...(isEnvElectron ? { BROWSER: 'none' } : {})
+  })
 
   // Renderer
   runScript({
     logger: createPrefixedLogger('renderer', LOG_PREFIX_COLOR_RENDERER),
-    script: require.resolve('@craco/craco/scripts/start', { paths: [process.cwd()] }),
-    env: { PORT: `${port}`, ...(isEnvElectron ? { BROWSER: 'none' } : {}) },
+    script,
+    env,
+    args,
     beforeExit
   }).start()
 
   // Main
   main = runWebpack({
     logger: createPrefixedLogger('main', LOG_PREFIX_COLOR_MAIN),
-    config: path.resolve('config/electron.webpack.js'),
+    config: path.join(__dirname, '../config/electron.webpack.js'),
     env: {
       APP_INDEX_HTML_URL: indexURL,
       WEBPACK_ELECTRON_ENTRY_PRELOAD: path.join(__dirname, './lib/preload/devSetup.js')
