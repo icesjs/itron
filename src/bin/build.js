@@ -50,11 +50,11 @@ async function run() {
   // Main
   const main = runWebpack({
     logger: createPrefixedLogger('main', LOG_PREFIX_COLOR_MAIN),
-    config: path.resolve('config/electron.webpack.js'),
+    config: path.join(__dirname, '../config/electron.webpack.js'),
     env: {
       APP_INDEX_HTML_PATH: relIndexPath,
       ANALYZER_SERVER_PORT: ANALYZER_SERVER_PORT[1],
-      WEBPACK_ELECTRON_ENTRY_PRELOAD: path.join(__dirname, './lib/preload/prodSetup.js')
+      WEBPACK_ELECTRON_ENTRY_PRELOAD: path.join(__dirname, '../lib/preload/prodSetup.js')
     }
   })
 
