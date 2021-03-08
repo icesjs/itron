@@ -24,8 +24,8 @@ function loadConfig(config) {
       ['cssModuleLocalIdentName', 'CSS_MODULE_LOCAL_IDENT_NAME', 'string'],
       ['themePlugin', 'THEME_PLUGIN_OPTIONS', 'object'],
       ['localePlugin', 'LOCALE_PLUGIN_OPTIONS', 'object'],
-      ['mainPreload', 'MAIN_PRELOAD', 'string', 'absolutePath'],
-      ['rendererPreload', 'RENDERER_PRELOAD', 'string', 'absolutePath']
+      ['mainPreloadFile', 'MAIN_PRELOAD', 'string', 'absolutePath'],
+      ['rendererPreloadFile', 'RENDERER_PRELOAD', 'string', 'absolutePath']
     ]
     for (const [prop, configName, valueType, configType] of items) {
       if (hasOwnProperty.call(config, prop)) {
@@ -34,6 +34,9 @@ function loadConfig(config) {
           throw new Error(`The type of value for ${prop} option must be a ${valueType}`)
         }
         if (configType === 'absolutePath') {
+          if (!value) {
+            continue
+          }
           if (!path.isAbsolute(value)) {
             value = resolve(value)
           }
@@ -64,18 +67,18 @@ module.exports = Object.assign(
     RENDERER_BUILD_PATH: resolve('build/renderer/'),
     ADDONS_BUILD_PATH: resolve('build/addons/'),
     // renderer
-    // RENDERER_CONTEXT_ALIAS: '@',
+    RENDERER_CONTEXT_ALIAS: '@',
     RENDERER_CONTEXT: resolve('src/renderer/'),
     RENDERER_ENTRY: resolve('src/renderer/index.tsx'),
     RENDERER_PUBLIC_ASSETS: resolve('public/web/'),
     // main
-    // MAIN_CONTEXT_ALIAS: '#',
+    MAIN_CONTEXT_ALIAS: '#',
     MAIN_CONTEXT: resolve('src/main/'),
     MAIN_ENTRY: resolve('src/main/index.ts'),
     MAIN_BUILD_FILE_NAME: 'index.js',
     // misc
     CSS_MODULE_LOCAL_IDENT_NAME: '[local]_[hash:base64:5]',
-    THEME_PLUGIN_OPTIONS: { extract: false },
+    THEME_PLUGIN_OPTIONS: { extract: false, themes: ['src/renderer/themes/*.scss'] },
     LOCALE_PLUGIN_OPTIONS: { extract: false },
     MAIN_PRELOAD: '',
     RENDERER_PRELOAD: ''

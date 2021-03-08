@@ -1,6 +1,6 @@
 {
   "name": "itron",
-  "version": "0.0.2-alpha",
+  "version": "1.0.0-alpha",
   "bin": "dist/bin/index.js",
   "description": "Help build applications using electron and webpack",
   "engines": {
