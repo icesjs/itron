@@ -21,6 +21,12 @@ program
   .description('build for production')
   .action((options) => require('../scripts/build')(options))
 
+// test
+program
+  .command('test')
+  .description('run test')
+  .action((options) => require('../scripts/test')(options))
+
 // pack
 program
   .command('pack')

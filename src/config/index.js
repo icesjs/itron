@@ -104,7 +104,7 @@ function getReactScriptsDefaultConfig() {
     MAIN_BUILD_FILE_NAME: 'index.js',
     // misc
     CSS_MODULE_LOCAL_IDENT_NAME: '[local]_[hash:base64:5]',
-    THEME_PLUGIN_OPTIONS: { extract: false, themes: ['src/themes/*.scss'] },
+    THEME_PLUGIN_OPTIONS: null,
     LOCALE_PLUGIN_OPTIONS: null,
     MAIN_PRELOAD: '',
     RENDERER_PRELOAD: ''

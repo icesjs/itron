@@ -415,6 +415,7 @@ function getDefaultLog() {
 }
 
 module.exports = {
+  createLogger,
   createPrefixedLogger,
   get log() {
     return getDefaultLog()
