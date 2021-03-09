@@ -179,7 +179,7 @@ function getAppWindowIcon() {
     if (!fs.existsSync(configPath)) {
       return
     }
-    const config = yaml.safeLoad(fs.readFileSync(configPath, 'utf8'))
+    const config = yaml.load(fs.readFileSync(configPath, 'utf8'))
     const platformConfig =
       config[
         {

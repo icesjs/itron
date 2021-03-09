@@ -1,10 +1,8 @@
 //
-const LocaleWebpackPlugin = require('@ices/locale-webpack-plugin')
-const ThemeWebpackPlugin = require('@ices/theme-webpack-plugin')
 const NodeAddonsPlugin = require('../../lib/plugins/NodeAddonsPlugin')
 const CheckGlobalPathsPlugin = require('../../lib/plugins/CheckGlobalPathsPlugin')
 const BundleAnalyzerPlugin = require('../../lib/plugins/BundleAnalyzerPlugin')
-const { resolveModule } = require('../../lib/resolve')
+const { resolveModule, resolveModulePath } = require('../../lib/resolve')
 
 const webpack = resolveModule('webpack')
 
@@ -32,6 +30,30 @@ if (!/^(web|electron-renderer)$/.test(RENDERER_BUILD_TARGET)) {
 const isEnvProduction = process.env.NODE_ENV === 'production'
 const target = RENDERER_BUILD_TARGET
 
+const getOptionalPlugin = (options, module) => {
+  if (!options) {
+    return null
+  }
+  let moduleName
+  let dependency
+  switch (module) {
+    case 'locale':
+      moduleName = '@ices/locale-webpack-plugin'
+      dependency = '@ices/react-locale'
+      break
+    case 'theme':
+      moduleName = '@ices/theme-webpack-plugin'
+      dependency = options.themeExportPath ? '' : '@ices/theme'
+      break
+  }
+  if (dependency && !resolveModulePath(dependency, false)) {
+    // 没有安装依赖模块，不使用该插件
+    return null
+  }
+  const Plugin = require(moduleName)
+  return new Plugin(options)
+}
+
 //
 const customizeWebpackConfig = {
   target,
@@ -57,9 +79,9 @@ const customizeWebpackConfig = {
     // 检查__dirname和__filename变量的使用，并抛出编译错误
     new CheckGlobalPathsPlugin(),
     // 本地化模块插件
-    LOCALE_PLUGIN_OPTIONS && new LocaleWebpackPlugin(LOCALE_PLUGIN_OPTIONS),
+    getOptionalPlugin(LOCALE_PLUGIN_OPTIONS, 'locale'),
     // 主题化插件
-    THEME_PLUGIN_OPTIONS && new ThemeWebpackPlugin(THEME_PLUGIN_OPTIONS),
+    getOptionalPlugin(THEME_PLUGIN_OPTIONS, 'theme'),
     //
     new webpack.EnvironmentPlugin({
       IS_ELECTRON: target !== 'web'

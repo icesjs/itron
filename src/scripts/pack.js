@@ -14,9 +14,14 @@ const fs = require('fs-extra')
 const { promisify } = require('util')
 const yaml = require('js-yaml')
 const merge = require('deepmerge')
-const minimist = require('minimist')
 const { log, createPrefixedLogger } = require('../lib/logger')
-const { relativePath, emptyDirSync, printErrorAndExit } = require('../lib/utils')
+const {
+  relativePath,
+  emptyDirSync,
+  printErrorAndExit,
+  getPackageJson,
+  getSelfContext
+} = require('../lib/utils')
 const { runScript } = require('../lib/runner')
 const {
   APP_BUILD_PATH,
@@ -32,9 +37,6 @@ const {
   ELECTRON_BUILDER_CONFIG = 'pack.yml',
   CI = 'false'
 } = process.env
-
-// 从命令行进入
-run(getCommandArgs()).catch(printErrorAndExit)
 
 async function run(commandArgs = {}) {
   const taskNames = ['rebuild-app-deps', 'build-production', 'pack-resources']
@@ -75,20 +77,20 @@ async function run(commandArgs = {}) {
   log.info('Packaged successfully!')
 }
 
-//
-function getCommandArgs() {
-  const rawArgv = process.argv.slice(2)
-  const {
-    platform = process.platform,
-    arch = process.arch,
-    config = ELECTRON_BUILDER_CONFIG,
-    publish = null,
-    rebuild,
-    dir
-  } = minimist(rawArgv, {
-    boolean: ['dir', 'rebuild']
-  })
-  return { platform, arch, dir, config, publish, rebuild }
+// 初始化默认选项
+function initDefaultOptions(options) {
+  const { platform, arch, config, publish, rebuild, dir } = Object.assign(
+    {
+      platform: process.platform,
+      arch: process.arch,
+      config: ELECTRON_BUILDER_CONFIG,
+      publish: null,
+      rebuild: false,
+      dir: false
+    },
+    options
+  )
+  return { platform, arch, config, publish, rebuild, dir }
 }
 
 function noop() {}
@@ -129,6 +131,7 @@ async function buildResources({ logger }) {
 
 // 打包产品
 async function packApplication({ platform, arch, dir, logger, publish, config }) {
+  config = await resolveConfigFile(config)
   // 同步打包配置文件
   await synchronizeBuilderConfig(config, { dir, publish })
   const args = ['build']
@@ -150,6 +153,48 @@ async function packApplication({ platform, arch, dir, logger, publish, config })
     script: 'electron-builder',
     args
   })
+}
+
+// 创建临时配置文件
+async function resolveConfigFile(config) {
+  const configFile = config && typeof config === 'string' ? path.resolve(config) : ''
+  const tmpConfigFile = path.resolve('node_modules/.app/electron-builder.yml')
+  let content
+  if (!configFile || !fs.existsSync(configFile)) {
+    let config
+    const { build, name = 'Itron' } = getPackageJson()
+    if (build && typeof build === 'object') {
+      config = build
+    } else {
+      const context = getSelfContext()
+      const base = path.join(context, 'resources')
+      const publicBase = path.join(base, 'public')
+      const content = await promisify(fs.readFile)(path.join(base, 'pack.yml'), 'utf8')
+      config = yaml.load(content)
+      config = merge(config, {
+        productName: name.replace(/[/\\]/g, '_'),
+        dmg: {
+          icon: path.join(publicBase, 'icon.dmg.icns')
+        },
+        mac: {
+          entitlements: path.join(publicBase, 'entitlements.mac.plist'),
+          entitlementsInherit: path.join(publicBase, 'entitlements.mac.plist'),
+          icon: path.join(publicBase, 'icon.icns')
+        },
+        win: {
+          icon: path.join(publicBase, 'icon.ico')
+        },
+        linux: {
+          icon: path.join(__dirname, 'icon.png')
+        }
+      })
+    }
+    content = yaml.dump(config)
+  } else {
+    content = await promisify(fs.readFile)(configFile, 'utf8')
+  }
+  await fs.outputFile(tmpConfigFile, content)
+  return relativePath(process.cwd(), tmpConfigFile)
 }
 
 async function synchronizeBuilderConfig(filepath, { dir, publish }) {
@@ -200,10 +245,8 @@ async function writeBuilderConfig(filepath, updates) {
     arrayMerge: (dest, src) => src
   })
   const dumped = yaml.dump(updatedConfig)
-  await promisify(fs.outputFile)(configPath, dumped)
+  await fs.outputFile(configPath, dumped)
   return updatedConfig
 }
 
-module.exports = {
-  pack: run
-}
+module.exports = (options) => run(initDefaultOptions(options)).catch(printErrorAndExit)

@@ -2,7 +2,7 @@ const path = require('path')
 const NodeAddonsPlugin = require('../lib/plugins/NodeAddonsPlugin')
 const BundleAnalyzerPlugin = require('../lib/plugins/BundleAnalyzerPlugin')
 const CheckGlobalPathsPlugin = require('../lib/plugins/CheckGlobalPathsPlugin')
-const { resolveModule: resolve } = require('../lib/resolve')
+const { resolveModule: resolve, resolveModulePath: resolvePath } = require('../lib/resolve')
 const { updateJsonFile, isTypeScriptProject, getSelfContext } = require('../lib/utils')
 
 //
@@ -41,6 +41,7 @@ const useTypeScript = isTypeScriptProject()
 const mode = isEnvDevelopment ? 'development' : 'production'
 const enableAddons = ENABLE_NODE_ADDONS !== 'false'
 const shouldUseSourceMap = GENERATE_SOURCEMAP !== 'false'
+const selfContext = getSelfContext()
 
 if (useTypeScript) {
   // 同步更新sourceMap开关
@@ -86,7 +87,7 @@ module.exports = {
           useTypeScript
             ? {
                 test: /\.(?:ts|mjs|js)$/,
-                loader: 'ts-loader',
+                loader: resolvePath('ts-loader', true, [selfContext]),
                 include: path.resolve(context, 'src'),
                 options: {
                   transpileOnly: true
@@ -96,20 +97,19 @@ module.exports = {
                 test: /\.m?js$/,
                 exclude: /node_modules/,
                 use: {
-                  loader: 'babel-loader',
-                  options: path.join(getSelfContext(), 'babel.config.js')
+                  loader: resolvePath('babel-loader'),
+                  options: require(path.join(selfContext, 'babel.config.js'))
                 }
               },
           {
-            loader: 'file-loader',
+            loader: resolvePath('file-loader', true, [selfContext]),
             exclude: /\.(?:json|m?js|ts|node)$/,
             options: {
               name: 'media/[name].[hash:8].[ext]',
               publicPath: '.',
-              postTransformPublicPath(path) {
-                // 转换资源的相对路径为绝对路径
-                return `__non_webpack_require__('path').join(__dirname, ${path})`
-              }
+              // 转换资源的相对路径为绝对路径
+              postTransformPublicPath: (path) =>
+                `__non_webpack_require__('path').join(__dirname, ${path})`
             }
           }
         ]

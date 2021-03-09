@@ -20,8 +20,6 @@ const builder = require('../builder')
 const { RENDERER_BUILD_PATH, MAIN_BUILD_PATH, APP_BUILD_PATH } = require('../config')
 
 // 运行构建
-run().catch(printErrorAndExit)
-
 async function run() {
   const {
     LOG_PREFIX_COLOR_MAIN,
@@ -71,7 +69,7 @@ async function run() {
     runScript({
       logger: createPrefixedLogger('electron', LOG_PREFIX_COLOR_ELECTRON),
       script: require('electron'),
-      args: ['.'],
+      args: [path.resolve('node_modules/.app/index.js')],
       windowsHide: false,
       cwd: APP_BUILD_PATH
     }).start()
@@ -102,3 +100,10 @@ async function createPackageJson() {
     )
   )
 }
+
+if (require.main === module) {
+  // 从命令行进入
+  run().catch(printErrorAndExit)
+}
+
+module.exports = (options) => run(options).catch(printErrorAndExit)

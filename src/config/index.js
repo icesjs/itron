@@ -1,5 +1,7 @@
 const path = require('path')
 const fs = require('fs')
+const { reactScripts, viteService, vueCLIService } = require('../lib/resolve')
+
 const cwd = fs.realpathSync(process.cwd())
 const resolve = (...args) => path.join(cwd, ...args)
 
@@ -48,18 +50,70 @@ function loadConfig(config) {
   return buildConfig
 }
 
-// 获取配置项
-let config
-let configFile = path.resolve('itron.config.js')
-if (!fs.existsSync(configFile)) {
-  config = loadConfig(require(path.resolve('package.json'))['itron'])
-} else {
-  config = loadConfig(require(configFile))
+// 解析模块文件路径
+const resolveModule = (filePath) => {
+  const moduleFileExtensions = [
+    'js',
+    'ts',
+    'jsx',
+    'tsx',
+    'vue',
+    'web.js',
+    'web.mjs',
+    'web.ts',
+    'web.jsx',
+    'web.tsx',
+    'mjs'
+  ]
+  for (const ext of moduleFileExtensions) {
+    const file = resolve(`${filePath}.${ext}`)
+    if (fs.existsSync(file)) {
+      return file
+    }
+  }
+  return resolve(`${filePath}.js`)
 }
 
-// 定义构建相关的路径参数等
-module.exports = Object.assign(
-  {
+// 获取主进程入口文件
+function getMainEntry(filepath) {
+  const file = resolveModule(filepath)
+  if (fs.existsSync(file)) {
+    return file
+  }
+  return path.join(__dirname, '../electron/main.js')
+}
+
+// react-scripts 默认配置项
+function getReactScriptsDefaultConfig() {
+  return {
+    // 应用构建输出路径，该目录会作为app打包发布
+    APP_BUILD_PATH: resolve('build/'),
+    // 相关资源的输出路径，需要在打包目录下
+    MAIN_BUILD_PATH: resolve('build/main/'),
+    RENDERER_BUILD_PATH: resolve('build/renderer/'),
+    ADDONS_BUILD_PATH: resolve('build/addons/'),
+    // renderer
+    RENDERER_CONTEXT_ALIAS: '@',
+    RENDERER_CONTEXT: resolve('src/'),
+    RENDERER_ENTRY: resolveModule('src/index'),
+    RENDERER_PUBLIC_ASSETS: resolve('public/'),
+    // main
+    MAIN_CONTEXT_ALIAS: '#',
+    MAIN_CONTEXT: resolve('src/'),
+    MAIN_ENTRY: getMainEntry('src/main'),
+    MAIN_BUILD_FILE_NAME: 'index.js',
+    // misc
+    CSS_MODULE_LOCAL_IDENT_NAME: '[local]_[hash:base64:5]',
+    THEME_PLUGIN_OPTIONS: { extract: false, themes: ['src/themes/*.scss'] },
+    LOCALE_PLUGIN_OPTIONS: null,
+    MAIN_PRELOAD: '',
+    RENDERER_PRELOAD: ''
+  }
+}
+
+// vue-cli-service默认配置项
+function getVueCLIServiceDefaultConfig() {
+  return {
     // 应用构建输出路径，该目录会作为app打包发布
     APP_BUILD_PATH: resolve('build/'),
     // 相关资源的输出路径，需要在打包目录下
@@ -82,6 +136,31 @@ module.exports = Object.assign(
     LOCALE_PLUGIN_OPTIONS: { extract: false },
     MAIN_PRELOAD: '',
     RENDERER_PRELOAD: ''
-  },
-  config
-)
+  }
+}
+
+// 获取默认配置项
+function getDefaultConfig() {
+  if (reactScripts.context) {
+    return getReactScriptsDefaultConfig()
+  }
+  if (vueCLIService.context || viteService.context) {
+    return getVueCLIServiceDefaultConfig()
+  }
+  return {}
+}
+
+// 获取配置项
+function getConfig() {
+  let config
+  let configFile = path.resolve('itron.config.js')
+  if (!fs.existsSync(configFile)) {
+    config = loadConfig(require(path.resolve('package.json'))['itron'])
+  } else {
+    config = loadConfig(require(configFile))
+  }
+  return config
+}
+
+// 定义构建相关的路径参数等
+module.exports = Object.assign({}, getDefaultConfig(), getConfig())

@@ -1,32 +1,40 @@
 const fs = require('fs')
 const path = require('path')
 const findUp = require('find-up')
-const chalk = require('chalk')
 const cwd = fs.realpathSync(process.cwd())
 
-let reactScripts
+const reactScripts = resolveBuilder('react-scripts', 'react-scripts')
+const vueCLIService = resolveBuilder('@vue/cli-service', 'vue-cli-service')
+const viteService = resolveBuilder('vite', 'vite')
 
 /**
- * 根据模块名解析并加载一个模块，优先从react-scripts模块依赖下解析。
- * 主要用于解析webpack等由react-scripts引入的模块
- * @param name 模块名
- * @returns {*}
+ * 解析模块路径
  */
-function resolveModule(name) {
-  if (!reactScripts) {
-    reactScripts = resolveReactScripts()
-  }
+function resolveModulePath(name, throwError = true, extraPaths = []) {
   try {
-    const paths = [cwd]
-    if (reactScripts) {
-      paths.unshift(reactScripts)
+    const paths = [cwd, ...extraPaths]
+    const builderContext = reactScripts.context || vueCLIService.context || viteService.context
+    if (builderContext) {
+      paths.unshift(builderContext)
     }
-    const packPath = require.resolve(name, { paths })
-    return require(packPath)
+    return require.resolve(name, { paths })
   } catch (e) {
-    chalk.red(`You must install ${name} manually`)
-    throw e
+    if (throwError) {
+      throw e
+    }
+    return ''
   }
+}
+
+/**
+ * 根据模块名解析并加载一个模块
+ */
+function resolveModule(name, throwError = true, extraPaths = []) {
+  const modulePath = resolveModulePath(name, throwError, extraPaths)
+  if (modulePath) {
+    return require(modulePath)
+  }
+  return null
 }
 
 /**
@@ -47,44 +55,36 @@ function resolvePackage(context, root = cwd, async = false) {
 }
 
 /**
- * 解析react-scripts模块的路径（可能由配置指定）
- * @returns {string|*}
+ * 解析构建工具的路径。
+ * @param moduleName 模块名称
+ * @param binName bin名称
+ * @return {{bin: string, context: string}}
  */
-function resolveReactScripts() {
-  if (reactScripts) {
-    return reactScripts
-  }
-  let modulePath
+function resolveBuilder(moduleName, binName) {
+  let builder
   try {
-    const pkg = require(path.resolve('package.json'))
-    const cracoConfigPaths = [pkg.cracoConfig, 'craco.config.js', '.cracorc.js', '.cracorc']
-    const cracoConfigPath = cracoConfigPaths.find(
-      (config) => config && fs.existsSync(path.resolve(config))
-    )
-    let reactScriptsName
-    if (cracoConfigPath) {
-      const resolvePath = path.resolve(cracoConfigPath)
-      const cachedModule = require.cache[require.resolve(resolvePath)]
-      if (cachedModule) {
-        reactScriptsName = cachedModule.exports.reactScriptsVersion
-      }
+    const packagePath = require.resolve(`${moduleName}/package.json`, { paths: [cwd] })
+    const { bin } = require(packagePath)
+    const context = path.dirname(packagePath)
+    builder = {
+      context,
+      bin: path.join(context, typeof bin === 'string' ? bin : bin[binName])
     }
-    if (!reactScriptsName) {
-      reactScriptsName = 'react-scripts'
-    }
-    const reactScriptsPackage = require.resolve(`${reactScriptsName}/package.json`, {
-      paths: [cwd]
-    })
-    modulePath = path.join(reactScriptsPackage, '..')
   } catch (e) {
-    modulePath = ''
+    builder = {
+      context: '',
+      bin: ''
+    }
   }
-  return (reactScripts = modulePath)
+  return builder
 }
 
 //
 module.exports = {
+  resolveModulePath,
   resolveModule,
   resolvePackage,
-  resolveReactScripts
+  reactScripts,
+  vueCLIService,
+  viteService
 }

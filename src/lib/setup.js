@@ -1,4 +1,4 @@
-const fs = require('fs')
+const fs = require('fs-extra')
 const path = require('path')
 
 //
@@ -16,26 +16,21 @@ function getReady() {
   const log = require('./logger').log
   // 捕获全局异常
   catchUncaughtException(log)
+
   // 清理相关文件与目录
-  const { relativePath, emptyDirSync, getPackageJson } = require('./utils')
-  const {
-    MAIN_BUILD_PATH,
-    MAIN_BUILD_FILE_NAME,
-    ADDONS_BUILD_PATH
-  } = require('../config')
-  const declaredMain = getPackageJson().main
+  const { relativePath, emptyDirSync } = require('./utils')
+  const { MAIN_BUILD_PATH, MAIN_BUILD_FILE_NAME, ADDONS_BUILD_PATH } = require('../config')
   const main = path.resolve(MAIN_BUILD_PATH, MAIN_BUILD_FILE_NAME)
-  const entry = relativePath(process.cwd(), main)
+  const tmpAppDir = path.resolve('node_modules/.app')
 
-  if (declaredMain || path.resolve(declaredMain) !== main) {
-    // 根据配置文件中的定义参数，更新应用的执行入口信息
-    const hints =
-      '/**\n * The contents of this file will be generated automatically.\n * Please do not write code in this file.\n */\n'
-    fs.writeFileSync(path.resolve('index.js'), `${hints}require('${entry}')\n`)
-  }
+  // 非打包时，electron命令运行的入口脚本路径
+  fs.outputFileSync(
+    path.join(tmpAppDir, 'index.js'),
+    `require('${relativePath(tmpAppDir, main)}')\n`
+  )
+  // 打包成应用后用到的入口文件路径
+  process.env.ELECTRON_MAIN_ENTRY_PATH = path.resolve(relativePath(process.cwd(), main))
 
-  // 保存至环境变量中，发布时有用到
-  process.env.ELECTRON_MAIN_ENTRY_PATH = path.resolve(entry)
   if (process.env.ENABLE_NODE_ADDONS !== 'false') {
     // 清空addons构建输出目录
     emptyDirSync(ADDONS_BUILD_PATH)

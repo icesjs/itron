@@ -12,6 +12,7 @@ module.exports = {
 
   //
   overrideWebpackConfig({ webpackConfig }) {
+    overridePublicPath(webpackConfig)
     customizeOptimization(webpackConfig)
     return webpackConfig
   }
@@ -19,7 +20,7 @@ module.exports = {
 
 const path = require('path')
 const { mergeWithCustomize } = require('webpack-merge')
-const { resolveModule, resolveReactScripts } = require('../resolve')
+const { resolveModule, reactScripts } = require('../resolve')
 const cwd = process.cwd()
 
 //
@@ -34,6 +35,12 @@ function customizeCracoWebpackConfigure(customizeConfig = {}) {
       customizeArray(a, b, key) {}
     })(originalConfig, customizeConfig)
   }
+}
+
+function overridePublicPath(config) {
+  const { output = {} } = config
+  output.publicPath = './'
+  config.output = output
 }
 
 function overridePublicAssetsPath(context, originalConfig, customizeConfig) {
@@ -108,7 +115,10 @@ function overrideOutputPath(context, customizeConfig) {
 
 //
 function overrideCRAPaths({ paths }, prop, val) {
-  const ownPath = paths['ownPath'] || resolveReactScripts()
+  const ownPath = paths['ownPath'] || reactScripts.context
+  if (!ownPath) {
+    return
+  }
   const modulePath = require.resolve(path.join(ownPath, 'config', 'paths.js'), {
     paths: [cwd]
   })

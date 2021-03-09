@@ -11,9 +11,7 @@ const { runWebpack, runScript } = require('../lib/runner')
 const builder = require('../builder')
 
 // 运行构建
-run().catch(printErrorAndExit)
-
-async function run() {
+async function run(options) {
   const {
     HTTPS,
     HOST,
@@ -25,7 +23,8 @@ async function run() {
     LOG_PREFIX_COLOR_MAIN,
     LOG_PREFIX_COLOR_RENDERER,
     LOG_PREFIX_COLOR_ELECTRON
-  } = process.env
+  } = initCommandEnv(options)
+
   const port = await getAvailablePort(PORT)
   const indexURL = urlFormat({
     protocol: `http${HTTPS ? 's' : ''}`,
@@ -40,6 +39,8 @@ async function run() {
   //
   const beforeExit = (callback) => (main ? main.stop(callback) : callback())
   const { env, script, args } = builder('start', {
+    HTTPS,
+    HOST,
     PORT: `${port}`,
     ...(isEnvElectron ? { BROWSER: 'none' } : {})
   })
@@ -85,7 +86,7 @@ async function run() {
     logger: createPrefixedLogger('electron', LOG_PREFIX_COLOR_ELECTRON),
     env: { APP_INDEX_HTML_URL: indexURL },
     script: require('electron'),
-    args: ['.'],
+    args: [path.resolve('node_modules/.app/index.js')],
     windowsHide: false,
     beforeExit
   })
@@ -95,6 +96,27 @@ async function run() {
   log.info('Launched the Electron.app')
 }
 
+function initCommandEnv(options) {
+  const { host, port, https, open, launch } = Object.assign({}, options)
+  const env = process.env
+  if (host && typeof host === 'string') {
+    env.HOST = host
+  }
+  if (!Number.isNaN(+port)) {
+    env.PORT = port
+  }
+  if (typeof https === 'boolean') {
+    env.HTTPS = 'true'
+  }
+  if (typeof open === 'boolean') {
+    env.BROWSER = open ? 'open' : 'none'
+  }
+  if (typeof launch === 'boolean') {
+    env.AUTO_LAUNCH_APP = String(launch)
+  }
+  return env
+}
+
 function sendRecompileRequest(host) {
   // 需要renderer进程来进行全局的typescript类型检查
   fetch(`${host}/webpack-dev-server/invalidate?${Date.now()}`, {
@@ -102,3 +124,5 @@ function sendRecompileRequest(host) {
     cache: 'no-cache'
   }).catch(log.error)
 }
+
+module.exports = (options) => run(options).catch(printErrorAndExit)
