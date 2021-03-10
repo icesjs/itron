@@ -217,6 +217,9 @@ module.exports = exports = {
       return null
     }
     const Plugin = moduleName ? require(moduleName) : module()
-    return new Plugin(options)
+    if (typeof Plugin === 'function') {
+      return new Plugin(options)
+    }
+    return null
   }
 }

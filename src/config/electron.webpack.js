@@ -145,7 +145,7 @@ module.exports = {
     getOptionalPlugin(
       isEnvDevelopment,
       // 路径大小写敏感检查
-      () => resolve('case-sensitive-paths-webpack-plugin')
+      () => resolve('case-sensitive-paths-webpack-plugin', false)
     ),
 
     getOptionalPlugin(
