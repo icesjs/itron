@@ -1,3 +1,4 @@
+const { merge } = require('webpack-merge')
 const { resolveModule } = require('../../lib/resolve')
 const { getOptionalPlugin } = require('../../lib/utils')
 
@@ -11,7 +12,8 @@ const {
   THEME_PLUGIN_OPTIONS,
   LOCALE_PLUGIN_OPTIONS,
   RENDERER_PRELOAD,
-  RENDERER_PUBLIC_ASSETS
+  RENDERER_PUBLIC_ASSETS,
+  rendererWebpackConfig
 } = require('../index')
 
 const {
@@ -29,7 +31,7 @@ const isEnvProduction = process.env.NODE_ENV === 'production'
 const target = RENDERER_BUILD_TARGET
 
 //
-const customizeWebpackConfig = {
+const defaultConfig = {
   target,
   entry: {
     index: [RENDERER_PRELOAD, RENDERER_ENTRY].filter(Boolean)
@@ -76,5 +78,5 @@ const customizeWebpackConfig = {
 
 //
 module.exports = {
-  configure: customizeWebpackConfig
+  configure: merge(defaultConfig, Object.assign({}, rendererWebpackConfig))
 }

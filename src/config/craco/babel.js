@@ -1,6 +1,7 @@
-const { CSS_MODULE_LOCAL_IDENT_NAME } = require('../index')
+const { CSS_MODULE_LOCAL_IDENT_NAME, babelPlugins = [], babelPresets = [] } = require('../index')
 
 module.exports = {
+  presets: [...babelPresets],
   plugins: [
     [
       'babel-plugin-react-css-modules',
@@ -8,6 +9,7 @@ module.exports = {
         generateScopedName: CSS_MODULE_LOCAL_IDENT_NAME,
         attributeNames: { activeStyleName: 'activeClassName' }
       }
-    ]
+    ],
+    ...babelPlugins
   ]
 }

@@ -27,12 +27,16 @@ function loadConfig(config) {
       ['themePlugin', 'THEME_PLUGIN_OPTIONS', 'object'],
       ['localePlugin', 'LOCALE_PLUGIN_OPTIONS', 'object'],
       ['mainPreloadFile', 'MAIN_PRELOAD', 'string', 'absolutePath'],
-      ['rendererPreloadFile', 'RENDERER_PRELOAD', 'string', 'absolutePath']
+      ['rendererPreloadFile', 'RENDERER_PRELOAD', 'string', 'absolutePath'],
+      ['babelPlugins', 'babelPlugins', 'array'],
+      ['babelPresets', 'babelPresets', 'array'],
+      ['mainWebpackConfig', 'mainWebpackConfig', 'object'],
+      ['rendererWebpackConfig', 'rendererWebpackConfig', 'object']
     ]
     for (const [prop, configName, valueType, configType] of items) {
       if (hasOwnProperty.call(config, prop)) {
         let value = config[prop]
-        if (typeof value !== valueType) {
+        if (valueType === 'array' ? !Array.isArray(value) : typeof value !== valueType) {
           throw new Error(`The type of value for ${prop} option must be a ${valueType}`)
         }
         if (configType === 'absolutePath') {
@@ -115,30 +119,7 @@ function getReactScriptsDefaultConfig() {
 
 // vue-cli-service默认配置项
 function getVueCLIServiceDefaultConfig() {
-  return {
-    // 应用构建输出路径，该目录会作为app打包发布
-    APP_BUILD_PATH: resolve('build/'),
-    // 相关资源的输出路径，需要在打包目录下
-    MAIN_BUILD_PATH: resolve('build/main/'),
-    RENDERER_BUILD_PATH: resolve('build/renderer/'),
-    ADDONS_BUILD_PATH: resolve('build/addons/'),
-    // renderer
-    RENDERER_CONTEXT_ALIAS: '@',
-    RENDERER_CONTEXT: resolve('src/renderer/'),
-    RENDERER_ENTRY: resolve('src/renderer/index.tsx'),
-    RENDERER_PUBLIC_ASSETS: resolve('public/web/'),
-    // main
-    MAIN_CONTEXT_ALIAS: '#',
-    MAIN_CONTEXT: resolve('src/main/'),
-    MAIN_ENTRY: resolve('src/main/index.ts'),
-    MAIN_BUILD_FILE_NAME: 'index.js',
-    // misc
-    CSS_MODULE_LOCAL_IDENT_NAME: '[local]_[hash:base64:5]',
-    THEME_PLUGIN_OPTIONS: { extract: false, themes: ['src/renderer/themes/*.scss'] },
-    LOCALE_PLUGIN_OPTIONS: { extract: false },
-    MAIN_PRELOAD: '',
-    RENDERER_PRELOAD: ''
-  }
+  return {}
 }
 
 // 获取默认配置项

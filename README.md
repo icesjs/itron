@@ -135,7 +135,7 @@ module.exports = {
 
   // 下面的一些配置项，用于扩展构建能力
 
-  // 扩展
+  // 动态主题插件
   themePlugin: {
     // themePlugin 值为 null 可禁用主题插件
     // 其他配置项与 @ices/theme-webpack-plugin 配置项相同
@@ -148,7 +148,19 @@ module.exports = {
     // localePlugin 值为 null 可禁用本地化插件
     // 其他配置项与 @ices/locale-webpack-plugin 配置项相同
     extract: false
-  }
+  },
+
+  // 额外的babel插件
+  babelPlugins: [],
+
+  // 额外的babel编译预设
+  babelPresets: [],
+
+  // 主进程构建配置，会与内置的配置进行合并
+  mainWebpackConfig: {},
+
+  // 渲染进程构建配置，会与内置的配置进行合并
+  rendererWebpackConfig: {}
 }
 ```
 

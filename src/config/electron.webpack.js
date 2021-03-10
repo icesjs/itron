@@ -1,4 +1,5 @@
 const path = require('path')
+const { merge } = require('webpack-merge')
 const { resolveModule: resolve, resolveModulePath: resolvePath } = require('../lib/resolve')
 const {
   updateJsonFile,
@@ -17,7 +18,8 @@ const {
   MAIN_BUILD_FILE_NAME,
   MAIN_CONTEXT,
   MAIN_CONTEXT_ALIAS,
-  MAIN_PRELOAD
+  MAIN_PRELOAD,
+  mainWebpackConfig
 } = require('./index')
 const context = process.cwd()
 
@@ -55,8 +57,7 @@ if (useTypeScript) {
   )
 }
 
-//
-module.exports = {
+const defaultConfig = {
   mode,
   context,
   target: 'electron-main',
@@ -203,3 +204,6 @@ module.exports = {
 
   performance: false
 }
+
+//
+module.exports = merge(defaultConfig, Object.assign({}, mainWebpackConfig))
