@@ -1,14 +1,14 @@
 {
   "name": "itron",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "bin": "dist/bin/itron.js",
   "description": "Help build applications using electron and webpack",
   "engines": {
     "node": ">=8.12.0"
   },
   "scripts": {
-    "dev": "rimraf dist && babel src -w -d dist -s inline",
-    "build": "rimraf dist && babel src -d dist -s --no-comments"
+    "dev": "rimraf dist && babel src -w -d dist -s inline -D --include-dotfiles",
+    "build": "rimraf dist && babel src -d dist -s --no-comments -D --include-dotfiles"
   },
   "dependencies": {
     "@babel/core": "^7.13.8",

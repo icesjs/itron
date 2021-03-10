@@ -38,7 +38,7 @@ function getReady() {
 }
 
 function loadEnv(NODE_ENV, forced) {
-  const dotenv = require('./dotenv')
+  const dotenv = require('./env/dotenv')
   const envFromConfig = Object.assign(
     {
       DEBUG: `${require(path.resolve('package.json')).name}:*`
