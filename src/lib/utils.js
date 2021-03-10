@@ -4,6 +4,7 @@ const portfinder = require('portfinder')
 const merge = require('deepmerge')
 const JSON5 = require('json5')
 const spawn = require('cross-spawn')
+const { resolveModulePath } = require('./resolve')
 
 module.exports = exports = {
   //
@@ -181,5 +182,41 @@ module.exports = exports = {
       return file
     }
     return ''
+  },
+
+  /**
+   * 获取可选插件
+   * @param options 为假值则不使用该插件，为真值则作为配置对象传入插件构造函数
+   * @param module 模块名称字符串，或者函数，返回插件构造函数
+   * @return {null|*}
+   */
+  getOptionalPlugin(options, module) {
+    if (!options) {
+      return null
+    }
+    if (typeof options !== 'object') {
+      options = {}
+    }
+    let moduleName
+    let dependency
+    switch (module) {
+      case 'locale':
+        moduleName = '@ices/locale-webpack-plugin'
+        dependency = '@ices/react-locale'
+        break
+      case 'theme':
+        moduleName = '@ices/theme-webpack-plugin'
+        dependency = options.themeExportPath ? '' : '@ices/theme'
+        break
+      default:
+        moduleName = typeof module === 'string' ? path.join(__dirname, 'plugins', module) : ''
+        dependency = ''
+    }
+    if (dependency && !resolveModulePath(dependency, false)) {
+      // 没有安装依赖模块，不使用该插件
+      return null
+    }
+    const Plugin = moduleName ? require(moduleName) : module()
+    return new Plugin(options)
   }
 }

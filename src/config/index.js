@@ -51,9 +51,23 @@ function loadConfig(config) {
 }
 
 // 解析模块文件路径
-const resolveModule = (filePath) => {
-  const moduleFileExtensions = ['js', 'ts', 'mjs', 'cjs']
-  for (const ext of moduleFileExtensions) {
+const resolveModule = (
+  filePath,
+  extensions = [
+    'js',
+    'ts',
+    'jsx',
+    'tsx',
+    'vue',
+    'web.js',
+    'web.mjs',
+    'web.ts',
+    'web.jsx',
+    'web.tsx',
+    'mjs'
+  ]
+) => {
+  for (const ext of extensions) {
     const file = resolve(`${filePath}.${ext}`)
     if (fs.existsSync(file)) {
       return file
@@ -64,7 +78,7 @@ const resolveModule = (filePath) => {
 
 // 获取主进程入口文件
 function getMainEntry(filepath) {
-  const file = resolveModule(filepath)
+  const file = resolveModule(filepath, ['js', 'ts', 'mjs', 'cjs'])
   if (fs.existsSync(file)) {
     return file
   }

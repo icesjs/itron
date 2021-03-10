@@ -1,15 +1,15 @@
 const path = require('path')
-const NodeAddonsPlugin = require('../lib/plugins/NodeAddonsPlugin')
-const BundleAnalyzerPlugin = require('../lib/plugins/BundleAnalyzerPlugin')
-const CheckGlobalPathsPlugin = require('../lib/plugins/CheckGlobalPathsPlugin')
 const { resolveModule: resolve, resolveModulePath: resolvePath } = require('../lib/resolve')
-const { updateJsonFile, isTypeScriptProject, getSelfContext } = require('../lib/utils')
+const {
+  updateJsonFile,
+  isTypeScriptProject,
+  getSelfContext,
+  getOptionalPlugin
+} = require('../lib/utils')
 
 //
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const webpack = resolve('webpack')
 const TerserPlugin = resolve('terser-webpack-plugin')
-const CaseSensitivePathsPlugin = resolve('case-sensitive-paths-webpack-plugin')
 
 const {
   MAIN_ENTRY,
@@ -32,7 +32,8 @@ const {
   GENERATE_FULL_SOURCEMAP = 'false',
   GENERATE_SOURCEMAP = 'false',
   ENABLE_NODE_ADDONS = 'false',
-  ENABLE_BUNDLE_ANALYZER = 'false'
+  ENABLE_BUNDLE_ANALYZER = 'false',
+  ENABLE_CHECK_NODE_PATHS = 'true'
 } = process.env
 
 const isEnvDevelopment = NODE_ENV === 'development'
@@ -59,11 +60,14 @@ module.exports = {
   mode,
   context,
   target: 'electron-main',
+
   entry: [WEBPACK_ELECTRON_ENTRY_PRELOAD, MAIN_PRELOAD, MAIN_ENTRY].filter(Boolean),
+
   output: {
     path: MAIN_BUILD_PATH,
     filename: MAIN_BUILD_FILE_NAME
   },
+
   resolve: {
     extensions: ['.ts', '.mjs', '.js', '.json'],
     alias: MAIN_CONTEXT_ALIAS
@@ -72,12 +76,15 @@ module.exports = {
         }
       : {}
   },
+
   devtool: isEnvDevelopment
     ? GENERATE_FULL_SOURCEMAP !== 'false'
       ? 'source-map'
       : 'eval-source-map'
     : shouldUseSourceMap && 'source-map',
+
   bail: isEnvProduction,
+
   module: {
     strictExportPresence: true,
     rules: [
@@ -116,6 +123,7 @@ module.exports = {
       }
     ].filter(Boolean)
   },
+
   optimization: {
     minimize: !(isEnvDevelopment || GENERATE_FULL_SOURCEMAP !== 'false'),
     minimizer: [
@@ -127,21 +135,43 @@ module.exports = {
       })
     ]
   },
+
   node: {
     __dirname: false,
     __filename: false
   },
+
   plugins: [
-    isEnvDevelopment && new CaseSensitivePathsPlugin(),
-    isEnvProduction && new CleanWebpackPlugin(),
-    isEnvProduction && ENABLE_BUNDLE_ANALYZER !== 'false' && new BundleAnalyzerPlugin(),
-    //
-    enableAddons && new NodeAddonsPlugin(), // 支持node addon的构建与打包
+    getOptionalPlugin(
+      isEnvDevelopment,
+      // 路径大小写敏感检查
+      () => resolve('case-sensitive-paths-webpack-plugin')
+    ),
+
+    getOptionalPlugin(
+      isEnvProduction,
+      // 清理构建目录
+      () => require('clean-webpack-plugin').CleanWebpackPlugin
+    ),
+
+    // 分析包
+    getOptionalPlugin(
+      isEnvProduction && ENABLE_BUNDLE_ANALYZER !== 'false',
+      'BundleAnalyzerPlugin'
+    ),
+
+    // 支持node addon的构建与打包
+    getOptionalPlugin(enableAddons, 'NodeAddonsPlugin'),
+
     // 检查__dirname和__filename变量的使用，抛出编译错误
-    new CheckGlobalPathsPlugin({
+    getOptionalPlugin(
       // 使用file-loader对路径进行了绝对化处理，其中使用了__dirname，不需要进行检查
-      ignoredLoaders: 'file-loader'
-    }),
+      ENABLE_CHECK_NODE_PATHS !== 'false' && {
+        ignoredLoaders: 'file-loader'
+      },
+      'CheckGlobalPathsPlugin'
+    ),
+
     //
     new webpack.EnvironmentPlugin({
       NODE_ENV: mode,
@@ -153,7 +183,7 @@ module.exports = {
       ...(APP_INDEX_HTML_PATH ? { ELECTRON_APP_INDEX_HTML_PATH: APP_INDEX_HTML_PATH } : {})
     })
   ].filter(Boolean),
-  //
+
   stats: {
     all: false,
     colors: true,
@@ -170,5 +200,6 @@ module.exports = {
           env: true
         })
   },
+
   performance: false
 }
