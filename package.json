@@ -1,6 +1,6 @@
 {
   "name": "itron",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0",
   "bin": "dist/bin/itron.js",
   "description": "Help build applications using electron and webpack",
   "engines": {
@@ -105,6 +105,13 @@
     "dist",
     "resources",
     "babel.config.js"
+  ],
+  "keywords": [
+    "build",
+    "electron",
+    "react",
+    "webpack",
+    "app"
   ],
   "license": "MIT"
 }

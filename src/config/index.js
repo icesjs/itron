@@ -52,19 +52,7 @@ function loadConfig(config) {
 
 // 解析模块文件路径
 const resolveModule = (filePath) => {
-  const moduleFileExtensions = [
-    'js',
-    'ts',
-    'jsx',
-    'tsx',
-    'vue',
-    'web.js',
-    'web.mjs',
-    'web.ts',
-    'web.jsx',
-    'web.tsx',
-    'mjs'
-  ]
+  const moduleFileExtensions = ['js', 'ts', 'mjs', 'cjs']
   for (const ext of moduleFileExtensions) {
     const file = resolve(`${filePath}.${ext}`)
     if (fs.existsSync(file)) {

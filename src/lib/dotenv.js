@@ -1,17 +1,13 @@
-const fs = require('fs')
-const path = require('path')
-const dotenv = require('dotenv')
-const cwd = process.cwd()
-
 const DEFAULT_ENV = `
 # 默认的环境变量配置（构建时会默认加载）
-# 调试日志设置
+# 调试日志设置，[name] 中的 name 表示工程 package.json 里面的 name 字段值
+# 通过这个配置项，可以过滤日志输出
 #DEBUG=*
-#DEBUG=viper:*
-#DEBUG=viper:main
-#DEBUG=viper:renderer
-#DEBUG=viper:electron
-#DEBUG=viper:script
+#DEBUG=[name]:*
+#DEBUG=[name]:main
+#DEBUG=[name]:renderer
+#DEBUG=[name]:electron
+#DEBUG=[name]:script
 
 # 定义渲染进程的构建目标环境(有效值：web或electron-renderer)
 RENDERER_BUILD_TARGET=electron-renderer
@@ -26,9 +22,10 @@ BROWSER=open
 AUTO_LAUNCH_APP=true
 
 # 代码变更时自动重启应用
+# 如果自动重启比较烦，可以禁用自动重启，通过上下文开发菜单里的重启菜单项手动重启
 AUTO_RELAUNCH_APP=true
 
-# 重启延时(ms)(不低于2000)
+# 自动重启延时(ms)(不低于2000)
 AUTO_RELAUNCH_DELAY=5000
 
 # 自动打开开发者工具
@@ -46,6 +43,7 @@ GENERATE_FULL_SOURCEMAP=false
 ENABLE_PRODUCTION_DEBUG=false
 
 # 产品模式，是否启用代码包分析
+# 使用 webpack-bundle-analyzer 进行分析
 ENABLE_BUNDLE_ANALYZER=false
 
 # 自定义HTTP开发服务器监听地址
@@ -73,33 +71,52 @@ LOG_PREFIX_FORMAT="[ {name} ]"
 # 启用electron模块的代理（仅在开发模式时有效）
 # 启用代理后，会对一些模块功能进行拦截处理，以便更好的适用开发
 # 比如初次启动应用时，打开应用窗口不会自动聚焦，就是通过代理拦截方法来实现的
+# 禁用此选项，WINDOW_FIRST_SHOW_INACTIVE 将失效
 USE_MODULE_PROXY_FOR_ELECTRON=true
 
 # 开发模式下是否显示不自动聚焦的窗口
+# 在自动重启模式下，主进程代码变更后，触发自动重启，如果自动聚焦到应用窗口，会干扰写代码的体验
+# 仅在开发模式下生效，产品打包下，不会注入相关代码来变更原有的electron窗口显示逻辑
 WINDOW_FIRST_SHOW_INACTIVE=true
 
-# 设置应用开发日志的输出级别(产品模式下不会输出开发日志)
-APP_DEV_LOG_LEVEL=info
+# 设置应用开发日志的输出级别(产品模式下不会输出开发日志)(待废弃的)
+# 需要主进程代码实现相关日志接口，现在构建工具作为单独npm包抽离出来了，这个设置考虑废弃掉
+#APP_DEV_LOG_LEVEL=info
 
-# 设置应用产品日志的输出级别(仅在开发模式下生效)
-APP_PRO_LOG_LEVEL=info
+# 设置应用产品日志的输出级别(仅在开发模式下生效)(待废弃的)
+#APP_PRO_LOG_LEVEL=info
 
 # 是否将调试日志写到日志文件中（在工程根目录下app.xxx.xxx）
+# 调试分析代码问题时，可以把日志输出到文件中保存起来，帮助分析解决问题
 WRITE_LOGS_TO_FILE=false
 
-# 使用node插件，启用该项将会构建本地插件
-ENABLE_NODE_ADDONS=true
+# 使用node插件，启用该项将会构建本地插件(node addons)
+# node插件也会通过webpack进行打包处理
+# 因为插件的平台兼容性，启用插件后，打包时会扫描插件依赖并进行插件rebuild，会对打包效率造成一定影响
+ENABLE_NODE_ADDONS=false
 
-# 开发模式下，是否启用上下文右键开发菜单
+# 构建node插件(addons)时，用于下载electron构建相关源代码的镜像地址
+# 不启用镜像地址，下载这些资源在国内会很费时，有时候甚至下载不下来
+# 可惜的是，淘宝提供的electron相关资源镜像，也很久不更新了的样子
+# 默认访问官方的镜像地址，大部分时候还是能下载的，只是慢一些
+ELECTRON_HEADERS_MIRROR_URL
+
+# 启用node全局路径变量检查(__filename、__dirname)
+# 建议不要在renderer代码里面使用node的路径变量，以后还能发布到web平台
+ENABLE_CHECK_NODE_PATHS=true
+
+# 开发模式下，是否启用上下文开发菜单
+# 开发菜单有一些功能，比如重启，刷新，打开开发者工具等
 ENABLE_DEV_CONTEXT_MENU=true
 
 # 浏览器扩展存储目录，开发模式下会默认安装此目录下的扩展
+# 因为国内网络环境的关系，访问谷歌扩展市场大概率是不通的，所以扩展的安装改成从目录安装了
+# 需要用到哪些扩展(比如React Developer Tools、Vue.js devtools)，可以自己到网上下载对应的扩展(.crx)，放到这个目录下就可以了
+# 构建工具会自动安装这些扩展到electron web容器里
 BROWSER_EXTENSIONS_DIR=extensions
 
-# 构建本地插件时，用于下载electron构建相关源代码的镜像地址
-ELECTRON_HEADERS_MIRROR_URL
-
-# electron-builder的默认配置文件路径
+# electron-builder 的默认配置文件路径，package.json里面的build字段备选
+# 如果不存在任何用户自定配置，则使用内置的默认配置
 ELECTRON_BUILDER_CONFIG=pack.yml
 
 ############ 应用内可使用的环境变量 ################
@@ -110,16 +127,22 @@ NODE_ENV
 IS_ELECTRON
 ELECTRON_APP_INDEX_HTML_URL
 ELECTRON_APP_NODE_INTEGRATION
-ELECTRON_APP_DEV_LOG_LEVEL
-ELECTRON_APP_PRO_LOG_LEVEL
+# 下面这两个没啥用了(待废弃)
+#ELECTRON_APP_DEV_LOG_LEVEL
+#ELECTRON_APP_PRO_LOG_LEVEL
 ################################################
 # 以下变量可自定义其值
-#（来自@ices/react-locale定义）
+# 来自国际化插件(@ices/react-locale)的环境变量定义
 #REACT_APP_DEFAULT_LOCALE=zh
 #REACT_APP_FALLBACK_LOCALE=zh
-REACT_APP_SUSPEND_LOCALE_WARNING=false
-REACT_APP_LANG_QUERY_KEY=lang
+#REACT_APP_SUSPEND_LOCALE_WARNING=false
+#REACT_APP_LANG_QUERY_KEY=lang
 `
+
+const fs = require('fs')
+const path = require('path')
+const dotenv = require('dotenv')
+const cwd = process.cwd()
 
 function parseFile(filename) {
   let content
