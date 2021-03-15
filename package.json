@@ -1,6 +1,6 @@
 {
   "name": "itron",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "bin": "dist/bin/itron.js",
   "description": "Help build applications using electron and webpack",
   "engines": {
@@ -17,7 +17,7 @@
     "@babel/runtime": "^7.13.9",
     "@craco/craco": "^6.1.1",
     "@ices/locale-webpack-plugin": "^1.4.1",
-    "@ices/theme-webpack-plugin": "^1.4.0",
+    "@ices/theme-webpack-plugin": "^1.4.1",
     "@ices/use-loader": "^1.4.0",
     "babel-jest": "25.5.1",
     "babel-plugin-react-css-modules": "^5.2.6",
