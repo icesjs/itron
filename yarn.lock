@@ -990,10 +990,10 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
-"@ices/locale-webpack-plugin@^1.4.1":
-  version "1.4.1"
-  resolved "https://registry.npm.taobao.org/@ices/locale-webpack-plugin/download/@ices/locale-webpack-plugin-1.4.1.tgz#8667667bfd293714e83d6d1e197a730bce5ffda6"
-  integrity sha1-hmdme/0pNxToPW0eGXpzC85f/aY=
+"@ices/locale-webpack-plugin@^1.4.2":
+  version "1.4.2"
+  resolved "https://registry.npm.taobao.org/@ices/locale-webpack-plugin/download/@ices/locale-webpack-plugin-1.4.2.tgz#31fa2e12cb5fac98ad2425b72c4e271ef61afbff"
+  integrity sha1-MfouEstfrJitJCW3LE4nHvYa+/8=
   dependencies:
     "@babel/core" "^7.0.0"
     "@babel/preset-env" "^7.0.0"

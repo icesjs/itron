@@ -1,6 +1,6 @@
 {
   "name": "itron",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "bin": "dist/bin/itron.js",
   "description": "Help build applications using electron and webpack",
   "engines": {
@@ -16,7 +16,7 @@
     "@babel/preset-env": "^7.13.9",
     "@babel/runtime": "^7.13.9",
     "@craco/craco": "^6.1.1",
-    "@ices/locale-webpack-plugin": "^1.4.1",
+    "@ices/locale-webpack-plugin": "^1.4.2",
     "@ices/theme-webpack-plugin": "^1.4.1",
     "@ices/use-loader": "^1.4.0",
     "babel-jest": "25.5.1",
@@ -62,7 +62,7 @@
     "rimraf": "^3.0.2"
   },
   "peerDependencies": {
-    "@ices/react-locale": "^1.4.1",
+    "@ices/react-locale": "^1.4.2",
     "@ices/theme": "^1.2.4",
     "babel-loader": "^7.0.0",
     "electron": ">=8",
